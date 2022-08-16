@@ -6,6 +6,7 @@ from telegram import Bot, ReplyKeyboardRemove, Message
 from telegram.error import Forbidden, NetworkError
 import sysv_ipc
 import json
+import argparse
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -37,13 +38,18 @@ async def main():
                 updates = (await bot.get_updates(offset=last_update))
                 for i in updates:
                     last_update = i.update_id+1
-                    if i.message.chat.id == CHAT_ID:
+                    if int(i.message.chat.id) == int(CHAT_ID):
                         await parse_message(i.message)
             except Exception as e:
                 print(e)
             await asyncio.sleep(5)
             data = sm.read()
-            j = json.loads(data.decode('utf-8').strip('\x00'))
+            txt = data.decode('utf-8').strip('\x00')
+            try:
+                j = json.loads(txt)
+            except JSONDecodeError:
+                await bot.send_message(CHAT_ID,f"Failed to parse data: {txt}")
+                continue
             now = datetime.datetime.now()
             last_check = datetime.datetime.strptime(f"{now.year}-{now.month}-{now.day} {j['time']}","%Y-%m-%d %H:%M:%S")
             if (now-last_check).seconds > 3600 and mapd:
@@ -67,4 +73,10 @@ async def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--token", "-t", help="token")
+    parser.add_argument("--chatid", "-c", help="chatid")
+    args = parser.parse_args()
+    CHAT_ID = args.chatid
+    TOKEN = args.token
     asyncio.run(main())
