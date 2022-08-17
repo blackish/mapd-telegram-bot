@@ -18,9 +18,9 @@ TOKEN = "0"
 
 async def parse_message(msg: Message):
     global sm
-    if msg.text == "ping":
+    if msg.text.lower() == "ping":
         await msg.reply_text("bot is alive")
-    elif msg.text == "status":
+    elif msg.text.lower() == "status":
         data = sm.read()
         j = json.loads(data.decode('utf-8').strip('\x00'))
         reply = f"Unet: {j['_UNET']}\nInet: {j['_INET_16_4']}\nUout: {j['_UOUTmed']}\nPnet: {j['_PNET']}\nUacc: {j['_Uacc']}\nIacc: {j['_Iacc']}"
@@ -47,7 +47,9 @@ async def main():
             txt = data.decode('utf-8').strip('\x00')
             try:
                 j = json.loads(txt)
-            except JSONDecodeError:
+                now = datetime.datetime.now()
+                last_check = datetime.datetime.strptime(f"{now.year}-{now.month}-{now.day} {j['time']}","%Y-%m-%d %H:%M:%S")
+            except Exception:
                 await bot.send_message(CHAT_ID,f"Failed to parse data: {txt}")
                 continue
             now = datetime.datetime.now()
